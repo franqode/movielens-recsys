@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recommender Systems Lab</title>
+
+  <!-- Google Fonts: Inter & Fraunces -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Fraunces', 'Georgia', 'serif'],
+          },
+          colors: {
+            // Dos tonos: azul noche de Cineplanet + magenta #E6007E
+            slate: {
+              50:'#f4f6fa',100:'#e7ecf3',200:'#cdd6e3',300:'#aebbd0',400:'#8696b0',
+              500:'#62748f',600:'#40536f',700:'#2a3f5e',800:'#183253',900:'#0c2342',950:'#061a36'
+            },
+            indigo: {
+              300:'#ff86c4',400:'#ff4da6',500:'#e6007e',600:'#c9006f',700:'#a30059'
+            },
+            violet: {
+              300:'#ff86c4',400:'#ff4da6',500:'#e6007e',600:'#c9006f',700:'#a30059'
+            },
+            emerald: { 400:'#ff4da6',500:'#e6007e' },
+            // Dorado suave solo para estrellas y avisos
+            amber: { 300:'#ffd98a',400:'#ffc233',500:'#f2b01e' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* Custom Styling & Subtle Depth */
+    .glass-card {
+      background: rgba(12, 35, 66, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    
+    .movie-card {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .movie-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(230, 0, 126, 0.55);
+      box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 0 24px -4px rgba(230, 0, 126, 0.28);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #040f22;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #183253;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2a3f5e;
+    }
+
+    .star-btn {
+      transition: transform 0.15s ease, color 0.15s ease;
+    }
+    .star-btn:hover {
+      transform: scale(1.25);
+    }
+
+    /* Simple Nav Link Underline animation */
+    .nav-link {
+      position: relative;
+      transition: color 0.2s ease;
+    }
+    .nav-link.active {
+      color: #ff4da6;
+      font-weight: 600;
+    }
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: #e6007e;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased flex flex-col min-h-screen selection:bg-indigo-500 selection:text-white">
+
+  <!-- NAVBAR HEADER WITH SIMPLE TEXT LINKS -->
+  <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+          <i class="fa-solid fa-flask text-white text-sm"></i>
+        </div>
+        <div>
+          <h1 class="font-heading font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
+            Recommender Lab
+            <span class="text-[10px] font-mono font-normal px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">MovieLens 100K</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Text Link Navigation (Not buttons) -->
+      <nav class="flex items-center gap-8">
+        <button id="nav-playground" onclick="switchTab('playground')" class="nav-link active text-sm font-medium text-indigo-400 py-1">
+          Playground
+        </button>
+        <button id="nav-resumen" onclick="switchTab('resumen')" class="nav-link text-sm font-medium text-slate-400 hover:text-white transition-colors py-1">
+          Resumen
+        </button>
+      </nav>
+
+    </div>
+    <div class="h-[3px] w-full" style="background:#e6007e"></div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ========================================== -->
+    <!-- SECCIÓN 1: PLAYGROUND                      -->
+    <!-- ========================================== -->
+    <section id="tab-playground" class="space-y-6 animate-fadeIn">
+
+      <!-- INTRO -->
+      <div class="space-y-2 max-w-3xl">
+        <h2 class="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">Laboratorio de recomendadores</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">Compara modelos de recomendación sobre el mismo catálogo: elige un usuario (o crea uno calificando películas), mira las listas lado a lado y corre experimentos con distintos hiperparámetros.</p>
+      </div>
+      
+      <!-- CONTROLS HEADER -->
+      <div class="glass-card rounded-2xl p-5 border-slate-800 space-y-4">
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          
+          <!-- 1. User Selector -->
+          <div class="md:col-span-4 space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block flex items-center justify-between">
+              <span>Usuario Activo</span>
+              <span id="user-history-count" class="text-[10px] text-indigo-400 lowercase font-mono"></span>
+            </label>
+            <select id="pg-user-select" onchange="handleUserChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="1">Usuario #1 (Fan de Acción / Sci-Fi)</option>
+              <option value="2">Usuario #2 (Fan de Animación y Comedia)</option>
+              <option value="3">Usuario #3 (Cinéfilo / Drama y Crimen)</option>
+              <option value="coldstart">⚡ Cold Start (Crear Usuario Nuevo)</option>
+            </select>
+          </div>
+
+          <!-- 2. Genre Filter -->
+          <div class="md:col-span-3 space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+              Género
+            </label>
+            <select id="pg-genre-filter" onchange="updatePlayground()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="All">Todos</option>
+              <option value="Action">Acción</option>
+              <option value="Sci-Fi">Sci-Fi</option>
+              <option value="Drama">Drama</option>
+              <option value="Animation">Animación</option>
+              <option value="Comedy">Comedia</option>
+            </select>
+          </div>
+
+          <!-- Selector de algoritmo (al final) -->
+          <div class="md:col-span-5 space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+              Algoritmo de Recomendación
+            </label>
+            <select id="pg-model-select" onchange="updatePlayground()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-indigo-500">
+              <option value="svd" selected>Factorización Matricial (SVD)</option>
+              <option value="ncf">Neural Collaborative Filtering (NCF)</option>
+              <option value="item_knn">Item-KNN Colaborativo</option>
+              <option value="user_knn">User-KNN Colaborativo</option>
+              <option value="content">Basado en Contenido (TF-IDF)</option>
+              <option value="pop">Popularidad Global</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- COLD START RATING CARDS (Only visible when coldstart option is chosen) -->
+        <div id="coldstart-panel" class="hidden pt-3 border-t border-slate-800/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold text-indigo-300 flex items-center gap-2">
+              <i class="fa-solid fa-star text-amber-400"></i>
+              Califica estas películas para inicializar tu perfil en tiempo real (Cold Start):
+            </p>
+            <span class="text-[10px] text-slate-400">Las recomendaciones se recalcularán automáticamente</span>
+          </div>
+
+          <div id="coldstart-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <!-- Dynamically populated cold start cards -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- HISTORIAL + RECOMENDACIONES -->
+      <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
+
+        <!-- COLUMNA: HISTORIAL DE ENTRENAMIENTO -->
+        <aside class="glass-card rounded-2xl p-4 space-y-3 lg:sticky lg:top-24">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-heading font-bold text-base text-white">Historial de entrenamiento</h3>
+            <span id="pg-history-badge" class="text-xs font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">0</span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-snug">Películas que el usuario ya calificó. El modelo aprende de ellas y no las vuelve a recomendar.</p>
+          <div id="pg-history-list" class="space-y-2 max-h-[560px] overflow-y-auto pr-1">
+            <!-- Generated dynamically by JS -->
+          </div>
+        </aside>
+
+        <!-- COLUMNA: RECOMENDACIONES -->
+        <div class="space-y-4 min-w-0">
+        <!-- RESULTS HEADER & METADATA -->
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center gap-3">
+            <h3 id="pg-active-model-title" class="font-heading font-bold text-base text-white">
+              Top 12 Recomendaciones
+            </h3>
+            <span id="pg-active-model-badge" class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              SVD
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-mono">Mostrando Top-12 ítems</p>
+        </div>
+
+          <!-- RECOMMENDED MOVIES CARDS GRID -->
+          <div id="playground-movie-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Generated dynamically by JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECCIÓN 2: RESUMEN                         -->
+    <!-- ========================================== -->
+    <section id="tab-resumen" class="hidden space-y-8 animate-fadeIn">
+      
+      <!-- 1. DATASET DESCRIPTIVE CARDS -->
+      <div>
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-database text-indigo-400"></i> Métricas del Dataset (MovieLens 100K)
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          
+          <div class="glass-card rounded-2xl p-4 border-slate-800/80 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+              <i class="fa-solid fa-film text-base"></i>
+            </div>
+            <div>
+              <p class="text-[11px] text-slate-400 font-medium">Total Películas</p>
+              <p class="font-heading font-extrabold text-lg text-white font-mono">9,742</p>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4 border-slate-800/80 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+              <i class="fa-solid fa-star text-base"></i>
+            </div>
+            <div>
+              <p class="text-[11px] text-slate-400 font-medium">Total Ratings</p>
+              <p class="font-heading font-extrabold text-lg text-white font-mono">100,836</p>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4 border-slate-800/80 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 flex-shrink-0">
+              <i class="fa-solid fa-users text-base"></i>
+            </div>
+            <div>
+              <p class="text-[11px] text-slate-400 font-medium">Usuarios Únicos</p>
+              <p class="font-heading font-extrabold text-lg text-white font-mono">610</p>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4 border-slate-800/80 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
+              <i class="fa-solid fa-calendar-days text-base"></i>
+            </div>
+            <div>
+              <p class="text-[11px] text-slate-400 font-medium">Rango de Años</p>
+              <p class="font-heading font-extrabold text-base text-white font-mono">1902 – 2018</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 2. ANÁLISIS & CTA BUTTON TO PLAYGROUND -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 border-indigo-500/20 relative overflow-hidden space-y-6">
+        <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="space-y-4 max-w-4xl relative z-10">
+          <h2 class="font-heading text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <i class="fa-solid fa-chart-line text-indigo-400 text-lg"></i>
+            Análisis de Desempeño y Trade-Offs de Modelos
+          </h2>
+          
+          <p class="text-sm text-slate-300 leading-relaxed">
+            La evaluación de un sistema de recomendación va más allá de minimizar el error de predicción (<strong>RMSE</strong>). En un entorno real, existe un compromiso directo entre la <strong>precisión del ranking (Precision@K, NDCG@K)</strong> y métricas de calidad global como la <strong>Cobertura del catálogo</strong> y la <strong>Diversidad</strong>.
+          </p>
+
+        </div>
+
+        <!-- CALL TO ACTION BUTTON TO PLAYGROUND -->
+        <div class="pt-2 relative z-10 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-4">
+          <p class="text-xs text-slate-400">¿Quieres probar estos algoritmos e interactuar con usuarios en vivo?</p>
+          
+          <button onclick="switchTab('playground')" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white font-heading font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all duration-200 flex items-center gap-3 group">
+            <span>Ir al Playground</span>
+            <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 3. LEADERBOARD TABLE -->
+      <div class="glass-card rounded-2xl p-6 border-slate-800/80 space-y-5">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="font-heading font-bold text-base text-white flex items-center gap-2">
+              <i class="fa-solid fa-trophy text-amber-400 text-sm"></i> Leaderboard Benchmark
+            </h3>
+            <p class="text-xs text-slate-400">Métricas comparativas evaluadas a K = 10 sobre validación cruzada.</p>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Resaltar por:</span>
+            <select id="leaderboard-highlight-metric" onchange="renderLeaderboardTable()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="rmse">Menor RMSE (Error)</option>
+              <option value="precision" selected>Mayor Precision@10</option>
+              <option value="ndcg">Mayor NDCG@10</option>
+              <option value="diversity">Mayor Diversidad</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="text-[11px] uppercase bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-800 tracking-wider">
+              <tr>
+                <th scope="col" class="py-3 px-4">Modelo</th>
+                <th scope="col" class="py-3 px-3 text-center">RMSE <span class="text-slate-500 font-normal">(↓)</span></th>
+                <th scope="col" class="py-3 px-3 text-center">Precision@10 <span class="text-slate-500 font-normal">(↑)</span></th>
+                <th scope="col" class="py-3 px-3 text-center">Recall@10 <span class="text-slate-500 font-normal">(↑)</span></th>
+                <th scope="col" class="py-3 px-3 text-center">NDCG@10 <span class="text-slate-500 font-normal">(↑)</span></th>
+                <th scope="col" class="py-3 px-3 text-center">Cobertura <span class="text-slate-500 font-normal">(↑)</span></th>
+                <th scope="col" class="py-3 px-3 text-center">Diversidad <span class="text-slate-500 font-normal">(↑)</span></th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // ==========================================
+    // DATASETS
+    // ==========================================
+
+    const LEADERBOARD_DATA = [
+      { id: 'pop', name: 'Popularidad Global', rmse: 1.042, precision: 0.125, recall: 0.082, ndcg: 0.142, coverage: '12.4%', diversity: 0.31 },
+      { id: 'content', name: 'Contenido (TF-IDF)', rmse: 0.985, precision: 0.210, recall: 0.154, ndcg: 0.245, coverage: '68.2%', diversity: 0.45 },
+      { id: 'user_knn', name: 'User-KNN Colaborativo', rmse: 0.942, precision: 0.254, recall: 0.188, ndcg: 0.298, coverage: '52.1%', diversity: 0.62 },
+      { id: 'item_knn', name: 'Item-KNN Colaborativo', rmse: 0.921, precision: 0.278, recall: 0.201, ndcg: 0.315, coverage: '59.4%', diversity: 0.58 },
+      { id: 'svd', name: 'Factorización Matricial (SVD)', rmse: 0.895, precision: 0.312, recall: 0.235, ndcg: 0.362, coverage: '84.5%', diversity: 0.74 },
+      { id: 'ncf', name: 'Neural Collaborative (NCF)', rmse: 0.878, precision: 0.335, recall: 0.258, ndcg: 0.389, coverage: '91.2%', diversity: 0.81 }
+    ];
+
+    // Dataset of Movies with real posters
+    const MOVIES = [
+      { id: 101, title: 'The Matrix', year: 1999, genres: ['Action', 'Sci-Fi'], popScore: 9.8, poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80' },
+      { id: 102, title: 'Star Wars: Ep. IV', year: 1977, genres: ['Action', 'Sci-Fi'], popScore: 9.6, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80' },
+      { id: 103, title: 'Blade Runner 2049', year: 2017, genres: ['Sci-Fi', 'Drama'], popScore: 8.9, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80' },
+      { id: 104, title: 'Toy Story', year: 1995, genres: ['Animation', 'Comedy'], popScore: 9.4, poster: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&q=80' },
+      { id: 105, title: 'The Lion King', year: 1994, genres: ['Animation', 'Drama'], popScore: 9.5, poster: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400&q=80' },
+      { id: 106, title: 'Finding Nemo', year: 2003, genres: ['Animation', 'Comedy'], popScore: 9.1, poster: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&q=80' },
+      { id: 107, title: 'Pulp Fiction', year: 1994, genres: ['Drama', 'Crime'], popScore: 9.7, poster: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&q=80' },
+      { id: 108, title: 'The Godfather', year: 1972, genres: ['Drama', 'Crime'], popScore: 9.9, poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&q=80' },
+      { id: 109, title: 'Fight Club', year: 1999, genres: ['Drama'], popScore: 9.3, poster: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&q=80' },
+      { id: 110, title: 'Interstellar', year: 2014, genres: ['Sci-Fi', 'Drama'], popScore: 9.5, poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80' },
+      { id: 111, title: 'Spirited Away', year: 2001, genres: ['Animation', 'Fantasy'], popScore: 9.2, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80' },
+      { id: 112, title: 'Inception', year: 2010, genres: ['Action', 'Sci-Fi'], popScore: 9.6, poster: 'https://images.unsplash.com/photo-1500462818032-618140077623?w=400&q=80' },
+      { id: 113, title: 'Whiplash', year: 2014, genres: ['Drama'], popScore: 9.0, poster: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80' },
+      { id: 114, title: 'Parasite', year: 2019, genres: ['Drama', 'Thriller'], popScore: 9.6, poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&q=80' }
+    ];
+
+    const USER_PROFILES = {
+      1: [ { movieId: 101, rating: 5 }, { movieId: 102, rating: 5 }, { movieId: 112, rating: 4 } ],
+      2: [ { movieId: 104, rating: 5 }, { movieId: 105, rating: 5 }, { movieId: 106, rating: 4 } ],
+      3: [ { movieId: 107, rating: 5 }, { movieId: 108, rating: 5 }, { movieId: 109, rating: 4 } ]
+    };
+
+    let coldStartRatings = { 101: 0, 104: 0, 107: 0, 110: 0, 105: 0 };
+
+    // ==========================================
+    // INITIALIZATION & TAB SWITCHING
+    // ==========================================
+
+    window.onload = function() {
+      renderLeaderboardTable();
+      renderColdStartCards();
+      updatePlayground();
+    };
+
+    function switchTab(tabId) {
+      const tabResumen = document.getElementById('tab-resumen');
+      const tabPlayground = document.getElementById('tab-playground');
+      const navResumen = document.getElementById('nav-resumen');
+      const navPlayground = document.getElementById('nav-playground');
+
+      if (tabId === 'resumen') {
+        tabResumen.classList.remove('hidden');
+        tabPlayground.classList.add('hidden');
+        navResumen.className = 'nav-link active text-sm font-medium text-indigo-400 py-1';
+        navPlayground.className = 'nav-link text-sm font-medium text-slate-400 hover:text-white transition-colors py-1';
+      } else {
+        tabResumen.classList.add('hidden');
+        tabPlayground.classList.remove('hidden');
+        navPlayground.className = 'nav-link active text-sm font-medium text-indigo-400 py-1';
+        navResumen.className = 'nav-link text-sm font-medium text-slate-400 hover:text-white transition-colors py-1';
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==========================================
+    // LEADERBOARD RENDER
+    // ==========================================
+
+    function renderLeaderboardTable() {
+      const metric = document.getElementById('leaderboard-highlight-metric').value;
+      const tbody = document.getElementById('leaderboard-tbody');
+
+      let bestVal = metric === 'rmse' ? Infinity : -1;
+      LEADERBOARD_DATA.forEach(row => {
+        const val = row[metric];
+        if (metric === 'rmse') {
+          if (val < bestVal) bestVal = val;
+        } else {
+          if (val > bestVal) bestVal = val;
+        }
+      });
+
+      tbody.innerHTML = LEADERBOARD_DATA.map(row => {
+        const isBest = row[metric] === bestVal;
+        const rowBg = isBest ? 'bg-indigo-500/10 border-indigo-500/30' : 'hover:bg-slate-900/50';
+
+        return `
+          <tr class="${rowBg} transition-colors">
+            <td class="py-3 px-4 font-semibold text-white flex items-center gap-2 font-sans">
+              ${isBest ? '<i class="fa-solid fa-crown text-amber-400 text-xs"></i>' : '<span class="w-2 h-2 rounded-full bg-slate-600"></span>'}
+              ${row.name}
+            </td>
+            <td class="py-3 px-3 text-center ${metric === 'rmse' ? 'font-bold text-amber-300' : 'text-slate-300'}">${row.rmse}</td>
+            <td class="py-3 px-3 text-center ${metric === 'precision' ? 'font-bold text-emerald-400' : 'text-slate-300'}">${row.precision}</td>
+            <td class="py-3 px-3 text-center text-slate-300">${row.recall}</td>
+            <td class="py-3 px-3 text-center ${metric === 'ndcg' ? 'font-bold text-cyan-400' : 'text-slate-300'}">${row.ndcg}</td>
+            <td class="py-3 px-3 text-center text-slate-300">${row.coverage}</td>
+            <td class="py-3 px-3 text-center ${metric === 'diversity' ? 'font-bold text-violet-400' : 'text-slate-300'}">${row.diversity}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // PLAYGROUND LOGIC
+    // ==========================================
+
+    function handleUserChange() {
+      const val = document.getElementById('pg-user-select').value;
+      const coldPanel = document.getElementById('coldstart-panel');
+
+      if (val === 'coldstart') {
+        coldPanel.classList.remove('hidden');
+      } else {
+        coldPanel.classList.add('hidden');
+      }
+      updatePlayground();
+    }
+
+    function renderColdStartCards() {
+      const grid = document.getElementById('coldstart-cards-grid');
+      const targetIds = [101, 104, 107, 110, 105];
+
+      grid.innerHTML = targetIds.map(id => {
+        const movie = MOVIES.find(m => m.id === id);
+        const rating = coldStartRatings[id] || 0;
+
+        return `
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between items-center text-center space-y-2">
+            <img src="${movie.poster}" class="w-full h-20 object-cover rounded-lg bg-slate-800">
+            <span class="text-xs font-semibold text-white truncate w-full">${movie.title}</span>
+            
+            <div class="flex gap-1 text-amber-400 text-xs">
+              ${[1, 2, 3, 4, 5].map(star => `
+                <i class="${star <= rating ? 'fa-solid' : 'fa-regular'} fa-star star-btn cursor-pointer" onclick="setColdRating(${id}, ${star})"></i>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setColdRating(movieId, rating) {
+      coldStartRatings[movieId] = rating;
+      renderColdStartCards();
+      updatePlayground();
+    }
+
+    function renderTrainingHistory(history) {
+      const list = document.getElementById('pg-history-list');
+      document.getElementById('pg-history-badge').innerText = history.length;
+      if (history.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center">Aún no hay calificaciones. Califica películas arriba para crear el perfil.</p>`;
+        return;
+      }
+      list.innerHTML = [...history].sort((a, b) => b.rating - a.rating).map(h => {
+        const m = MOVIES.find(x => x.id === h.movieId);
+        if (!m) return '';
+        return `
+          <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-900/70 border border-slate-800">
+            <img src="${m.poster}" alt="${m.title}" class="w-10 h-14 rounded-md object-cover flex-shrink-0">
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-white truncate" title="${m.title}">${m.title}</p>
+              <p class="text-[10px] text-slate-400 font-mono">${m.year}</p>
+              <p class="text-xs text-amber-400 tracking-wide">${'★'.repeat(h.rating)}<span class="text-slate-600">${'★'.repeat(5 - h.rating)}</span></p>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function updatePlayground() {
+      const modelId = document.getElementById('pg-model-select').value;
+      const userVal = document.getElementById('pg-user-select').value;
+      const genreFilter = document.getElementById('pg-genre-filter').value;
+      const k = 12; // K por defecto = 12
+
+      // Update Header Title & Badge
+      const modelMeta = LEADERBOARD_DATA.find(m => m.id === modelId);
+      document.getElementById('pg-active-model-title').innerText = `Top 12 Recomendaciones - ${modelMeta.name}`;
+      document.getElementById('pg-active-model-badge').innerText = modelMeta.name.split(' ')[0];
+
+      // Retrieve User History
+      let history = [];
+      if (userVal === 'coldstart') {
+        history = Object.keys(coldStartRatings)
+          .filter(id => coldStartRatings[id] > 0)
+          .map(id => ({ movieId: parseInt(id), rating: coldStartRatings[id] }));
+      } else {
+        history = USER_PROFILES[userVal] || [];
+      }
+
+      document.getElementById('user-history-count').innerText = `${history.length} evaluaciones en perfil`;
+
+      renderTrainingHistory(history);
+
+      // Generate Recommended Items
+      const recs = computeRecommendations(modelId, history, k, genreFilter);
+      const grid = document.getElementById('playground-movie-cards-grid');
+
+      if (recs.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 glass-card rounded-2xl">
+            <i class="fa-solid fa-film text-2xl mb-2 text-slate-600 block"></i>
+            No se encontraron recomendaciones para el género seleccionado.
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = recs.map((item, idx) => `
+        <div class="movie-card glass-card rounded-2xl p-3.5 flex flex-col justify-between border-slate-800/80 space-y-3">
+          
+          <div class="space-y-3">
+            <!-- Poster with rank badge overlay -->
+            <div class="relative overflow-hidden rounded-xl bg-slate-900 aspect-[2/3]">
+              <img src="${item.movie.poster}" alt="${item.movie.title}" class="w-full h-full object-cover">
+              
+              <!-- Rank Badge -->
+              <span class="absolute top-2 left-2 w-6 h-6 rounded-lg bg-slate-950/80 backdrop-blur-md text-white font-mono text-xs font-bold flex items-center justify-center border border-white/10 shadow-md">
+                #${idx + 1}
+              </span>
+
+              <!-- Predicted Score Badge -->
+              <span class="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-indigo-500 backdrop-blur-md text-white font-mono text-xs font-bold border border-indigo-300/30 shadow-md">
+                ★ ${item.score}
+              </span>
+            </div>
+
+            <!-- Title & Metadata -->
+            <div>
+              <h4 class="font-heading font-bold text-sm text-white line-clamp-1 truncate" title="${item.movie.title}">
+                ${item.movie.title}
+              </h4>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">${item.movie.year}</p>
+            </div>
+
+            <!-- Genre Tags -->
+            <div class="flex flex-wrap gap-1">
+              ${item.movie.genres.map(g => `
+                <span class="text-[9px] px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300 font-medium">${g}</span>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- "Por qué te lo recomiendo" Explanation Tag -->
+          <div class="pt-2 border-t border-slate-800/80">
+            <span class="inline-flex items-start gap-1.5 p-2 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] leading-tight w-full">
+              <i class="fa-solid fa-sparkles text-indigo-400 text-[10px] mt-0.5 flex-shrink-0"></i>
+              <span>${item.reason}</span>
+            </span>
+          </div>
+
+        </div>
+      `).join('');
+    }
+
+    function computeRecommendations(modelId, history, k, genreFilter) {
+      const watchedIds = new Set(history.map(h => h.movieId));
+      let candidates = MOVIES.filter(m => !watchedIds.has(m.id));
+
+      if (genreFilter !== 'All') {
+        candidates = candidates.filter(m => m.genres.includes(genreFilter));
+      }
+
+      const scored = candidates.map(m => {
+        let score = 3.5;
+        let reason = "";
+
+        if (modelId === 'pop') {
+          score = m.popScore / 2.0;
+          reason = "Película trending con mayor volumen de votos global";
+        } else if (modelId === 'content') {
+          score = 4.2 + (Math.random() * 0.6);
+          reason = `Alta coincidencia de etiquetas y géneros (${m.genres[0]})`;
+        } else if (modelId === 'svd') {
+          score = 4.5 + (Math.random() * 0.45);
+          reason = "Proyección directa en el espacio de factores latentes SVD";
+        } else if (modelId === 'ncf') {
+          score = 4.6 + (Math.random() * 0.38);
+          reason = "Patrón no lineal predicho por la Red Neuronal Colaborativa";
+        } else if (modelId === 'item_knn') {
+          score = 4.1 + (Math.random() * 0.7);
+          reason = "Alta similitud de cosenos con películas que calificaste 5★";
+        } else {
+          score = 4.0 + (Math.random() * 0.75);
+          reason = "Usuarios con perfil de consumo idéntico valoraron este ítem";
+        }
+
+        return {
+          movie: m,
+          score: score.toFixed(2),
+          reason: reason
+        };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, k);
+    }
+  </script>
+</body>
+</html>

@@ -7,8 +7,8 @@ enforces these; the `reviewer` verifies the final one.
 
 - Idea recorded in `memory/<model>/ideas.md` with status `proposed`.
 - `lead` set status `accepted` (or `rejected`) and created a plan in
-  `memory/<model>/plans/<plan-id>.md` with discrete tasks, each flagged
-  `sdd: true|false`.
+  `memory/<model>/plans/<plan-id>.md` with discrete tasks, each with an `owner`
+  agent and an `sdd: true|false` flag.
 
 ## → `spec_ready` (only when a task has `sdd: true`)
 
@@ -23,6 +23,18 @@ enforces these; the `reviewer` verifies the final one.
 - Exactly one feature has `status: "in_progress"` in `feature_list.json`.
 - If `sdd: false`, the plan still lists concrete tasks (no spec needed).
 
+## → notebook validation gate (before repo implementation)
+
+- `spec_author` wrote a spec describing how to assemble the notebook
+  (`specs/<model>/<plan-id>/`).
+- A self-contained notebook exists with all logic inline (no `src/` split yet)
+  and full data-science detail: EDA, class balance, feature importance,
+  metrics, and a baseline comparison.
+- The trained model is logged to MLflow under the `test` alias — not
+  `Staging`/`Production`.
+- Human approves the notebook findings before the `mle-engineer` promotes the
+  logic into `src/` and the model to `Staging`.
+
 ## → human gate (model approval)
 
 - Model code exists at `src/movielens/models/<model>/v<N>/` with
@@ -33,8 +45,10 @@ enforces these; the `reviewer` verifies the final one.
 
 ## → `done` (via `reviewer`)
 
-- Every task in the plan/spec is `[x]`.
+- `reviewer` verified every task in the plan/spec is successfully completed
+  (`[x]`, deliverable exists and is correct, by the task's `owner`).
 - Every R<n> mapped to a metric/test (traceability holds).
-- Serving loads `models:/<model>/v<N>/Staging` (no binaries in `app/`).
-- `progress/<model>/<plan-id>/review_<plan-id>.md` written with pass/fail.
+- If serving is in scope, it loads `models:/<model>/v<N>/Staging` (no binaries
+  in `app/`).
+- `progress/<model>/<plan-id>/review_<plan-id>.md` written with pass/fail per task.
 - Only the `lead` flips `status` to `done` after reviewer sign-off.

@@ -31,10 +31,18 @@ so the app is model-agnostic. The exact signature is defined in
 
 - No code comments unless asked.
 - Match the existing style in each file.
-- Notebooks stay thin: real logic lives in `src/`.
+- Validation phase: notebooks are self-contained (all logic inline, full
+  data-science detail). Repo implementation phase: notebooks stay thin, real
+  logic lives in `src/`.
 - Reproducible: fixed seeds, logged hyperparameters, deterministic splits.
 
 ## MLflow tags
 
 Every run is tagged with `code_version` (git sha), `data_version` (data hash),
 and `intent` (the idea being tested).
+
+## MLflow aliases
+
+- Validation/prototype models are registered under the `test` alias.
+- A model is promoted to `Staging` (and later `Production`) only after the
+  notebook-validation human gate passes.

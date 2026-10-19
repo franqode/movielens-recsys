@@ -6,6 +6,7 @@ data/
 
 # MLflow artifacts
 mlflow/
+mlflow.db
 
 # Python
 __pycache__/

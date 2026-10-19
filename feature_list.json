@@ -1,3 +1,37 @@
 {
-  "features": []
+  "features": [
+    {
+      "id": "xgboost-binary-v1",
+      "model": "xgboost",
+      "intent": "prove binary XGBoost (1->0, 5->1) ranks recommendations; eval precision@10 / recall@10",
+      "sdd": true,
+      "status": "done",
+      "current_owner": null,
+      "data_version": "28770e0e10e2",
+      "run_id": "fdab1c40799f460db34a2ec60e8c9774",
+      "plan": "memory/xgboost/plans/xgboost-binary-v1.md"
+    },
+    {
+      "id": "xgboost-user-item-cross-terms",
+      "model": "xgboost",
+      "intent": "add user-item cross terms (multiplicative interaction features) to beat the baseline on precision@10",
+      "sdd": true,
+      "status": "in_progress",
+      "current_owner": null,
+      "data_version": null,
+      "run_id": null,
+      "plan": "memory/xgboost/plans/xgboost-user-item-cross-terms.md"
+    },
+    {
+      "id": "als-v1",
+      "model": "als",
+      "intent": "prove implicit-feedback ALS beats the MLflow test-alias model (xgboost-v1 v8) on NDCG@10 / precision@10 / recall@10 / hit-rate@10",
+      "sdd": true,
+      "status": "in_progress",
+      "current_owner": "data-scientist",
+      "data_version": null,
+      "run_id": null,
+      "plan": "memory/als/plans/als-v1.md"
+    }
+  ]
 }

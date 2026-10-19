@@ -8,7 +8,7 @@ recommender-systems lab. One primary agent (`lead`) orchestrates six subagents.
 | Agent | Mode | SDD role | Owns |
 |---|---|---|---|
 | `lead` | primary | leader | `feature_list.json`, `memory/<model>/plans/`, `progress/` |
-| `data-scientist` | subagent | ideator | `memory/<model>/ideas.md`, EDA notebooks |
+| `data-scientist` | subagent | ideator + validator | `memory/<model>/ideas.md`, validation notebooks |
 | `spec_author` | subagent | spec author | `specs/<model>/<plan-id>/` |
 | `data-engineer` | subagent | implement (features) | `src/movielens/features.py`, `data/processed/` |
 | `mle-engineer` | subagent | implementer | `src/movielens/models/<model>/v<N>/`, `memory/<model>/experiments.md` |
@@ -18,7 +18,7 @@ recommender-systems lab. One primary agent (`lead`) orchestrates six subagents.
 ## Separation rules
 
 - `lead` never edits code.
-- `data-scientist` proposes/specs but does not train.
+- `data-scientist` generates ideas / validates the human's idea in a notebook; does not implement into `src/`.
 - `mle-engineer` trains but does not self-approve.
 - `reviewer` verifies but never edits code (`edit: deny`).
 - `mlops-engineer` serves only after the reviewer's sign-off.
@@ -46,13 +46,15 @@ recommender-systems lab. One primary agent (`lead`) orchestrates six subagents.
   "intent": "train NCF baseline",
   "sdd": true,
   "status": "pending",
+  "current_owner": null,
   "data_version": null,
   "run_id": null,
   "plan": "memory/ncf/plans/ncf-v1.md"
 }
 ```
 
-Statuses: `pending` → `spec_ready` (sdd=true only) → `in_progress` → `done`.
+`current_owner` names the agent currently holding the task (the `lead` routes
+it). Statuses: `pending` → `spec_ready` (sdd=true only) → `in_progress` → `done`.
 
 ## Versioning
 

@@ -8,7 +8,7 @@ human/agent-readable markdown, git-versioned.
 ```
 memory/<model>/
 ├── ideas.md            # intended ideas + status (proposed/accepted/rejected)
-├── plans/<plan-id>.md  # accepted idea -> tasks (each sdd: true|false)
+├── plans/<plan-id>.md  # accepted idea -> tasks (each has owner + sdd flag)
 └── experiments.md      # runs: run_id, code_version, data_version, metrics
 ```
 
@@ -27,10 +27,14 @@ memory/<model>/
 - idea: ncf-emb-64
 - status: pending | in_progress | done
 - tasks:
-  - [ ] t1 build features        sdd: false
-  - [ ] t2 train NCF             sdd: false
-  - [ ] t3 evaluate vs SVD       sdd: false
+  - [ ] t1 build features        owner: data-engineer   sdd: false
+  - [ ] t2 train NCF             owner: mle-engineer    sdd: false
+  - [ ] t3 evaluate vs SVD       owner: mle-engineer    sdd: false
 ```
+
+The `owner` names the responsible agent for the task (the `lead` routes the
+task to that agent). The `sdd` flag is independent of the owner: a task with
+`sdd: true` gets a spec from `spec_author` first, whoever its owner is.
 
 ## experiments.md entry
 
